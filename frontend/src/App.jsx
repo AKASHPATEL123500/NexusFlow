@@ -1,11 +1,11 @@
 import { Route, Routes } from 'react-router'
 import './App.css'
-import Home from './pages/home'
+import NexusFlowUltra from './pages/home'
 function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Home/>}/>
+      <Route path="/" element={<NexusFlowUltra/>}/>
     </Routes>
   )
 }

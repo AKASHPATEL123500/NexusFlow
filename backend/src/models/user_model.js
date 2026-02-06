@@ -89,7 +89,8 @@ userSchema.methods.genrateAccessToken = async function (){
 userSchema.methods.genrateRefreshToken = async function(){
     return await jwt.sign(
         {
-            _id : this._id
+            _id : this._id,
+            role : this.role
         },
         process.env.REFRESH_TOKEN_SECRET_KEY
         ,{
@@ -98,5 +99,5 @@ userSchema.methods.genrateRefreshToken = async function(){
     )
 }
 
-const User = mongoose.models("User",userSchema)
+const User = mongoose.model("User",userSchema)
 export default User

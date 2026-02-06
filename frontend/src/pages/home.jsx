@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 function Home() {
   const [time, setTime] = useState(new Date());
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-  const [scrolled, setScrolled] = useState(false);
-  const [activeCard, setActiveCard] = useState(null);
+  const [ripples, setRipples] = useState([]);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -12,457 +13,459 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    let ticking = false;
     const handleMouseMove = (e) => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setMousePos({ 
-            x: (e.clientX / window.innerWidth) * 100,
-            y: (e.clientY / window.innerHeight) * 100
-          });
-          ticking = false;
-        });
-        ticking = true;
-      }
+      setMousePos({ x: e.clientX, y: e.clientY });
     };
-    
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("scroll", handleScroll);
-    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  const handleClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const newRipple = { x, y, id: Date.now() };
+    setRipples([...ripples, newRipple]);
+    setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+    }, 1500);
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      
-      {/* Animated mesh gradient background */}
-      <div className="fixed inset-0 opacity-40">
-        <div 
-          className="absolute inset-0 transition-all duration-700 ease-out"
+    <div 
+      ref={containerRef}
+      className="min-h-screen w-full bg-[#000000] relative overflow-hidden"
+      onClick={handleClick}
+    >
+      {/* Premium Spotlight Effect */}
+      <div 
+        className="pointer-events-none fixed inset-0 z-30 transition-opacity duration-300"
+        style={{
+          background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(251, 191, 36, 0.08), transparent 40%)`
+        }}
+      />
+
+      {/* Ripple Effects */}
+      {ripples.map((ripple) => (
+        <div
+          key={ripple.id}
+          className="absolute pointer-events-none z-20"
           style={{
-            background: `
-              radial-gradient(circle 800px at ${mousePos.x}% ${mousePos.y}%, 
-                rgba(139, 92, 246, 0.2), transparent 50%),
-              radial-gradient(circle 600px at ${100-mousePos.x}% ${100-mousePos.y}%, 
-                rgba(236, 72, 153, 0.15), transparent 50%),
-              radial-gradient(circle 1000px at 50% 50%, 
-                rgba(59, 130, 246, 0.1), transparent 60%)
-            `
+            left: ripple.x,
+            top: ripple.y,
+            transform: 'translate(-50%, -50%)',
           }}
+        >
+          <div className="w-0 h-0 rounded-full border-2 border-amber-400/60 animate-ripple-premium" />
+          <div className="w-0 h-0 rounded-full border border-amber-300/40 animate-ripple-premium-delayed absolute inset-0" />
+        </div>
+      ))}
+
+      {/* Animated Grid with Depth */}
+      <div className="absolute inset-0 opacity-[0.15]">
+        <div className="h-full w-full animate-grid-flow" 
+             style={{
+               backgroundImage: `
+                 linear-gradient(rgba(251, 191, 36, 0.15) 1.5px, transparent 1.5px),
+                 linear-gradient(90deg, rgba(251, 191, 36, 0.15) 1.5px, transparent 1.5px)
+               `,
+               backgroundSize: '60px 60px',
+               perspective: '1000px',
+             }}
         />
       </div>
 
-      {/* Grain texture */}
-      <div className="fixed inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none" 
-           style={{
-             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-           }} 
-      />
+      {/* Premium Gradient Orbs */}
+      <div className="absolute top-1/4 left-1/4 w-150 h-150 bg-amber-500/10 rounded-full blur-[150px] animate-float-1" />
+      <div className="absolute bottom-1/4 right-1/3 w-125 h-125 bg-orange-400/10 rounded-full blur-[130px] animate-float-2" />
+      <div className="absolute top-1/2 right-1/4 w-100 h-100 bg-yellow-400/10 rounded-full blur-[120px] animate-float-3" />
 
-      {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? 'bg-black/80 backdrop-blur-2xl border-b border-white/5' : 'bg-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5">
-          <div className="flex items-center justify-between">
-            
-            {/* Logo */}
-            <div className="flex items-center gap-4 group cursor-pointer">
-              <div className="relative">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-violet-600 
-                              transform group-hover:rotate-180 transition-transform duration-700 flex items-center justify-center">
-                  <div className="w-7 h-7 rounded-lg bg-black/40 backdrop-blur-sm" />
-                </div>
-                <div className="absolute inset-0 w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 
-                              blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="hidden sm:block">
-                <div className="text-xl font-bold tracking-tight">NexusFlow</div>
-                <div className="text-[9px] tracking-[0.3em] text-white/40 -mt-0.5">WORKSPACE</div>
-              </div>
-            </div>
+      {/* Diagonal Premium Lines */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-[0.08]">
+        {[...Array(25)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute h-0.5 bg-linear-to-r from-transparent via-amber-400 to-transparent animate-diagonal-flow"
+            style={{
+              width: '200%',
+              top: `${i * 4}%`,
+              left: '-50%',
+              transform: `rotate(-35deg)`,
+              animationDelay: `${i * 0.1}s`,
+            }}
+          />
+        ))}
+      </div>
 
-            {/* Center nav */}
-            <div className="hidden lg:flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10">
-              {['Features', 'Solutions', 'Pricing', 'Docs'].map((item, i) => (
-                <a key={i} href="#" 
-                   className="px-5 py-2 rounded-full text-sm font-medium text-white/60 hover:text-white 
-                            hover:bg-white/10 transition-all">
-                  {item}
-                </a>
-              ))}
-            </div>
+      {/* Noise Texture Overlay */}
+      <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay pointer-events-none">
+        <div className="w-full h-full bg-noise animate-noise" />
+      </div>
 
-            {/* Right actions */}
-            <div className="flex items-center gap-3">
-              <button className="hidden sm:block px-5 py-2.5 text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Sign In
-              </button>
-              <button className="px-5 py-2.5 rounded-xl bg-white text-black text-sm font-semibold 
-                               hover:bg-white/90 transition-all hover:scale-105 shadow-lg shadow-white/10">
-                Get Started
-              </button>
-            </div>
+      {/* Main Container */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">
+        
+        {/* Premium Time Display */}
+        <div className="absolute top-8 right-8 group">
+          <div className="font-mono text-amber-400/30 text-sm tracking-[0.3em] transition-all duration-300 group-hover:text-amber-400/60 group-hover:tracking-[0.35em]">
+            {time.toLocaleTimeString('en-US', { hour12: false })}
           </div>
+          <div className="h-px w-0 bg-linear-to-r from-amber-400/50 to-transparent group-hover:w-full transition-all duration-500 mt-1" />
         </div>
-      </nav>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center px-6 pt-20">
-        <div className="max-w-6xl mx-auto text-center">
+        {/* Premium Logo with Layers */}
+        <div className="mb-16 relative group">
+          <div className="absolute inset-0 bg-amber-400/20 blur-3xl group-hover:blur-[80px] transition-all duration-700 animate-pulse-glow" />
+          <div className="absolute inset-0 bg-orange-400/10 blur-2xl group-hover:blur-[60px] transition-all duration-700 animate-pulse-glow-delayed" />
           
-          {/* Floating badge */}
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 mb-8 rounded-full 
-                        bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border border-white/20
-                        hover:border-white/30 transition-all cursor-pointer group">
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              </div>
-              <span className="text-sm font-medium bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                Now in Beta
-              </span>
-            </div>
-            <div className="w-px h-4 bg-white/20" />
-            <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors">
-              Launching 2026
-            </span>
-          </div>
-
-          {/* Main headline */}
-          <h1 className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight mb-8 leading-none">
-            <span className="block">Where Teams</span>
-            <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 
-                           bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
-              Build the Future
-            </span>
-          </h1>
-
-          {/* Subheadline */}
-          <p className="text-xl sm:text-2xl text-white/60 max-w-3xl mx-auto mb-12 leading-relaxed">
-            The intelligent workspace that grows with your team. 
-            <span className="text-white/90"> Real-time collaboration, AI-powered workflows, zero friction.</span>
-          </p>
-
-          {/* CTA Group */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <button className="group relative px-8 py-4 rounded-2xl bg-white text-black font-bold text-base
-                             overflow-hidden hover:scale-105 transition-all shadow-2xl shadow-white/20">
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-200 to-fuchsia-200 
-                            translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              <span className="relative flex items-center gap-2">
-                Start Free Trial
-                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
-            </button>
+          <div className="relative">
+            {/* Outer Ring */}
+            <svg width="120" height="120" viewBox="0 0 120 120" className="animate-spin-elegant">
+              <circle cx="60" cy="60" r="55" fill="none" stroke="url(#gradient1)" strokeWidth="1" strokeDasharray="8 8" opacity="0.4" />
+              <defs>
+                <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fbbf24" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+              </defs>
+            </svg>
             
-            <button className="group px-8 py-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 
-                             font-bold text-base hover:bg-white/10 hover:border-white/20 transition-all">
-              <span className="flex items-center gap-2 text-white/90">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
-                </svg>
-                Watch Demo
-              </span>
-            </button>
-          </div>
+            {/* Middle Ring */}
+            <svg width="120" height="120" viewBox="0 0 120 120" className="absolute inset-0 animate-spin-counter">
+              <circle cx="60" cy="60" r="45" fill="none" stroke="url(#gradient2)" strokeWidth="1.5" strokeDasharray="4 6" opacity="0.6" />
+              <defs>
+                <linearGradient id="gradient2" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#f59e0b" />
+                  <stop offset="100%" stopColor="#fbbf24" />
+                </linearGradient>
+              </defs>
+            </svg>
 
-          {/* Social proof */}
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-white/40">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 
-                                        border-2 border-black" />
-                ))}
-              </div>
-              <span>12,000+ teams</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-white/20" />
-            <div className="flex items-center gap-1.5">
-              {[1,2,3,4,5].map(i => (
-                <svg key={i} className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            {/* Center Hexagon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 bg-linear-to-br from-amber-400 to-orange-500 opacity-20 blur-xl animate-pulse" />
+                <svg width="48" height="48" viewBox="0 0 48 48" className="relative">
+                  <polygon points="24,4 40,14 40,34 24,44 8,34 8,14" fill="none" stroke="url(#gradient3)" strokeWidth="2" />
+                  <defs>
+                    <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="100%" stopColor="#f59e0b" />
+                    </linearGradient>
+                  </defs>
                 </svg>
-              ))}
-              <span className="ml-1">4.9/5 rating</span>
-            </div>
-            <div className="w-1 h-1 rounded-full bg-white/20" />
-            <span>SOC 2 Certified</span>
-          </div>
-
-          {/* Floating time indicator */}
-          <div className="absolute top-28 right-8 hidden xl:block">
-            <div className="px-4 py-3 rounded-2xl bg-white/5 backdrop-blur-2xl border border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="text-xs text-white/40 tracking-wider">LOCAL TIME</div>
-                <div className="font-mono text-lg font-bold tabular-nums">
-                  {time.toLocaleTimeString('en-US', { hour12: false })}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse-fast" />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Features Bento Grid */}
-      <section className="relative py-32 px-6">
-        <div className="max-w-7xl mx-auto">
+        {/* Main Content */}
+        <div className="max-w-5xl text-center space-y-10">
           
-          {/* Section header */}
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 mb-4 rounded-full bg-violet-500/10 border border-violet-500/20">
-              <span className="text-sm font-medium text-violet-400">Platform Features</span>
+          {/* Premium Glitch Text */}
+          <div className="relative">
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter relative leading-none">
+              <span className="absolute inset-0 text-amber-400/20 blur-sm animate-glitch-premium-1">
+                NEXUSFLOW
+              </span>
+              <span className="absolute inset-0 text-orange-400/20 blur-md animate-glitch-premium-2">
+                NEXUSFLOW
+              </span>
+              <span className="absolute inset-0 text-yellow-400/10 blur-lg animate-glitch-premium-3">
+                NEXUSFLOW
+              </span>
+              <span className="relative bg-linear-to-b from-white via-amber-50 to-amber-400 bg-clip-text text-transparent filter drop-shadow-[0_0_30px_rgba(251,191,36,0.3)]">
+                NEXUSFLOW
+              </span>
+            </h1>
+            
+            {/* Underline Effect */}
+            <div className="flex justify-center mt-6">
+              <div className="h-0.5 w-64 bg-linear-to-r from-transparent via-amber-400 to-transparent animate-width-pulse" />
             </div>
-            <h2 className="text-5xl sm:text-6xl font-black mb-6">Everything You Need</h2>
-            <p className="text-xl text-white/60 max-w-2xl mx-auto">
-              Powerful tools designed for modern teams who ship fast
+          </div>
+
+          {/* Premium Typewriter */}
+          <div className="h-10 flex items-center justify-center">
+            <p className="text-amber-400/70 text-base md:text-lg tracking-[0.4em] font-light uppercase animate-typewriter-premium overflow-hidden whitespace-nowrap border-r-2 border-amber-400/70">
+              The Future of Workspace
             </p>
           </div>
 
-          {/* Bento Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            
-            {/* Large card - AI Features */}
-            <div className="lg:col-span-2 lg:row-span-2 group relative p-8 lg:p-12 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 
-                          border border-white/10 hover:border-white/20 backdrop-blur-xl overflow-hidden transition-all cursor-pointer"
-                 onMouseEnter={() => setActiveCard(0)}
-                 onMouseLeave={() => setActiveCard(null)}>
-              
-              {/* Animated gradient */}
-              <div className={`absolute inset-0 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 opacity-0 
-                            ${activeCard === 0 ? 'opacity-100' : 'group-hover:opacity-50'} transition-opacity duration-700 blur-2xl`} />
-              
-              <div className="relative z-10">
-                <div className="inline-block p-3 mb-6 rounded-2xl bg-white/10 backdrop-blur-sm">
-                  <svg className="w-8 h-8 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                
-                <h3 className="text-3xl sm:text-4xl font-bold mb-4">AI-Powered Automation</h3>
-                <p className="text-white/60 text-lg mb-8 max-w-xl">
-                  Let AI handle the repetitive work. Smart suggestions, auto-categorization, 
-                  and intelligent workflows that adapt to your team's patterns.
-                </p>
-                
-                <div className="flex flex-wrap gap-2">
-                  {['Smart Suggestions', 'Auto-tagging', 'Predictive Search'].map((tag, i) => (
-                    <span key={i} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-white/80">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Real-time collab */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 
-                          border border-white/10 hover:border-white/20 backdrop-blur-xl overflow-hidden transition-all cursor-pointer"
-                 onMouseEnter={() => setActiveCard(1)}
-                 onMouseLeave={() => setActiveCard(null)}>
-              
-              <div className={`absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 opacity-0 
-                            ${activeCard === 1 ? 'opacity-100' : 'group-hover:opacity-50'} transition-opacity duration-700 blur-2xl`} />
-              
-              <div className="relative z-10">
-                <div className="inline-block p-3 mb-6 rounded-2xl bg-white/10 backdrop-blur-sm">
-                  <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-3">Real-Time Sync</h3>
-                <p className="text-white/60">
-                  See changes instantly. No refresh needed. Work together like you're in the same room.
-                </p>
-              </div>
-            </div>
-
-            {/* Security */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 
-                          border border-white/10 hover:border-white/20 backdrop-blur-xl overflow-hidden transition-all cursor-pointer"
-                 onMouseEnter={() => setActiveCard(2)}
-                 onMouseLeave={() => setActiveCard(null)}>
-              
-              <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 opacity-0 
-                            ${activeCard === 2 ? 'opacity-100' : 'group-hover:opacity-50'} transition-opacity duration-700 blur-2xl`} />
-              
-              <div className="relative z-10">
-                <div className="inline-block p-3 mb-6 rounded-2xl bg-white/10 backdrop-blur-sm">
-                  <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-3">Enterprise Security</h3>
-                <p className="text-white/60">
-                  Bank-level encryption, SOC 2 certified, GDPR compliant. Your data is safe with us.
-                </p>
-              </div>
-            </div>
-
-            {/* Analytics */}
-            <div className="lg:col-span-2 group relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 
-                          border border-white/10 hover:border-white/20 backdrop-blur-xl overflow-hidden transition-all cursor-pointer"
-                 onMouseEnter={() => setActiveCard(3)}
-                 onMouseLeave={() => setActiveCard(null)}>
-              
-              <div className={`absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 opacity-0 
-                            ${activeCard === 3 ? 'opacity-100' : 'group-hover:opacity-50'} transition-opacity duration-700 blur-2xl`} />
-              
-              <div className="relative z-10">
-                <div className="inline-block p-3 mb-6 rounded-2xl bg-white/10 backdrop-blur-sm">
-                  <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                
-                <h3 className="text-3xl font-bold mb-4">Advanced Analytics</h3>
-                <p className="text-white/60 text-lg max-w-xl">
-                  Deep insights into team productivity. Track metrics that matter and make data-driven decisions.
-                </p>
-              </div>
-            </div>
-
-            {/* Integrations */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 
-                          border border-white/10 hover:border-white/20 backdrop-blur-xl overflow-hidden transition-all cursor-pointer"
-                 onMouseEnter={() => setActiveCard(4)}
-                 onMouseLeave={() => setActiveCard(null)}>
-              
-              <div className={`absolute inset-0 bg-gradient-to-br from-pink-500/20 to-rose-500/20 opacity-0 
-                            ${activeCard === 4 ? 'opacity-100' : 'group-hover:opacity-50'} transition-opacity duration-700 blur-2xl`} />
-              
-              <div className="relative z-10">
-                <div className="inline-block p-3 mb-6 rounded-2xl bg-white/10 backdrop-blur-sm">
-                  <svg className="w-8 h-8 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
-                  </svg>
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-3">1000+ Integrations</h3>
-                <p className="text-white/60">
-                  Connect with your favorite tools. One-click setup for Slack, GitHub, Figma & more.
-                </p>
-              </div>
-            </div>
+          {/* Premium Description */}
+          <div className="space-y-4 text-white/60 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
+            <p className="animate-fade-in-premium hover:text-white/80 transition-colors duration-500" style={{ animationDelay: '0.3s' }}>
+              Where <span className="text-amber-400/80 font-medium">innovation</span> meets <span className="text-amber-400/80 font-medium">execution</span>.
+            </p>
+            <p className="animate-fade-in-premium hover:text-white/80 transition-colors duration-500" style={{ animationDelay: '0.5s' }}>
+              A revolutionary platform designed for <span className="text-amber-400/80 font-medium">creators</span>, <span className="text-amber-400/80 font-medium">builders</span>, and <span className="text-amber-400/80 font-medium">dreamers</span>.
+            </p>
+            <p className="animate-fade-in-premium hover:text-white/80 transition-colors duration-500" style={{ animationDelay: '0.7s' }}>
+              Transform your workflow. <span className="text-amber-400/80 font-medium">Elevate your vision</span>.
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* Stats Section */}
-      <section className="relative py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="p-12 lg:p-16 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 backdrop-blur-xl">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
-              {[
-                { value: "10M+", label: "Active Users", icon: "👥" },
-                { value: "99.9%", label: "Uptime SLA", icon: "⚡" },
-                { value: "150+", label: "Countries", icon: "🌍" },
-                { value: "<100ms", label: "Response Time", icon: "🚀" }
-              ].map((stat, i) => (
-                <div key={i} className="text-center">
-                  <div className="text-4xl mb-3">{stat.icon}</div>
-                  <div className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent mb-2">
-                    {stat.value}
+          {/* Premium Stats with Parallax */}
+          <div className="grid grid-cols-3 gap-12 pt-16 max-w-3xl mx-auto">
+            {[
+              { num: "01", label: "UNIFIED", desc: "Single Platform" },
+              { num: "02", label: "POWERFUL", desc: "Infinite Scale" },
+              { num: "03", label: "SEAMLESS", desc: "Zero Friction" }
+            ].map((item, idx) => (
+              <div 
+                key={idx} 
+                className="group animate-fade-in-up-premium relative"
+                style={{ animationDelay: `${1 + idx * 0.2}s` }}
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+              >
+                <div className="absolute -inset-4 bg-linear-to-br from-amber-400/0 to-orange-400/0 group-hover:from-amber-400/5 group-hover:to-orange-400/5 rounded-lg blur-xl transition-all duration-500" />
+                <div className="relative border border-white/5 rounded-lg p-6 bg-white/2 backdrop-blur-sm group-hover:border-amber-400/20 transition-all duration-500 group-hover:transform group-hover:scale-105">
+                  <div className="text-5xl font-bold bg-linear-to-br from-amber-400/40 to-orange-400/40 bg-clip-text text-transparent group-hover:from-amber-400/70 group-hover:to-orange-400/70 transition-all duration-500">
+                    {item.num}
                   </div>
-                  <div className="text-white/50 text-sm font-medium">{stat.label}</div>
+                  <div className="text-xs tracking-[0.4em] text-amber-400/50 mt-3 group-hover:text-amber-400/80 group-hover:tracking-[0.45em] transition-all duration-500">
+                    {item.label}
+                  </div>
+                  <div className="text-[10px] tracking-wider text-white/30 mt-2 group-hover:text-white/50 transition-all duration-500">
+                    {item.desc}
+                  </div>
+                  
+                  {/* Corner Accents */}
+                  <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-amber-400/0 group-hover:border-amber-400/50 transition-all duration-500" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-amber-400/0 group-hover:border-amber-400/50 transition-all duration-500" />
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
 
-      {/* Final CTA */}
-      <section className="relative py-32 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-5xl sm:text-6xl font-black mb-6">
-            Ready to Level Up?
-          </h2>
-          <p className="text-xl text-white/60 mb-10">
-            Join 10,000+ teams already building on NexusFlow
-          </p>
-          <button className="px-10 py-5 rounded-2xl bg-white text-black font-bold text-lg
-                           hover:scale-105 transition-all shadow-2xl shadow-white/20">
-            Start Free Trial →
-          </button>
-          <p className="text-sm text-white/40 mt-6">No credit card required • 14-day free trial</p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="relative border-t border-white/10 py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row justify-between items-center gap-8">
+          {/* Premium CTA */}
+          <div className="pt-20 space-y-8">
+            <div className="inline-block relative group">
+              <div className="absolute -inset-2 bg-linear-to-r from-amber-400 via-orange-500 to-amber-400 rounded-xl blur-lg opacity-40 group-hover:opacity-70 transition-all duration-700 animate-gradient-shift" />
+              <div className="absolute -inset-1 bg-linear-to-r from-amber-400 to-orange-500 rounded-lg opacity-50 group-hover:opacity-80 transition-all duration-500" />
+              
+              <button className="relative px-16 py-5 bg-black border-2 border-amber-400/50 rounded-lg overflow-hidden group-hover:border-amber-400 transition-all duration-500">
+                <div className="absolute inset-0 bg-linear-to-r from-amber-400/0 via-amber-400/20 to-amber-400/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <span className="relative text-amber-400 font-bold tracking-[0.3em] text-sm group-hover:text-amber-300 group-hover:tracking-[0.35em] transition-all duration-500">
+                  LAUNCHING SOON
+                </span>
+              </button>
+            </div>
             
-            {/* Brand */}
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-lg bg-black/40" />
-              </div>
-              <div>
-                <div className="font-bold text-lg">NexusFlow</div>
-                <div className="text-sm text-white/40">Crafted by <span className="text-white/60 font-medium">Akash Reddy 01</span></div>
-              </div>
+            {/* Year Indicator */}
+            <div className="flex items-center justify-center gap-6 text-white/40 text-xs">
+              <div className="h-px w-20 bg-linear-to-r from-transparent via-amber-400/30 to-amber-400/30 animate-line-glow" />
+              <span className="tracking-[0.6em] font-light">2 0 2 6</span>
+              <div className="h-px w-20 bg-linear-to-l from-transparent via-amber-400/30 to-amber-400/30 animate-line-glow-reverse" />
             </div>
 
-            {/* Links */}
-            <div className="flex flex-wrap gap-8 text-sm">
-              {[
-                ['Product', 'Features', 'Pricing', 'Changelog'],
-                ['Company', 'About', 'Blog', 'Careers'],
-                ['Legal', 'Privacy', 'Terms', 'Security']
-              ].map((group, i) => (
-                <div key={i} className="space-y-3">
-                  <div className="font-semibold text-white/90">{group[0]}</div>
-                  {group.slice(1).map((link, j) => (
-                    <div key={j}>
-                      <a href="#" className="text-white/50 hover:text-white transition-colors block">
-                        {link}
-                      </a>
-                    </div>
-                  ))}
+            {/* Feature Pills */}
+            <div className="flex flex-wrap gap-3 justify-center pt-4">
+              {['AI-Powered', 'Cloud Native', 'Real-time Sync', 'Enterprise Ready'].map((feature, idx) => (
+                <div 
+                  key={idx}
+                  className="px-4 py-2 rounded-full border border-white/10 bg-white/2 backdrop-blur-sm text-white/40 text-xs tracking-wider hover:border-amber-400/30 hover:text-amber-400/60 transition-all duration-500 cursor-default animate-fade-in-premium"
+                  style={{ animationDelay: `${1.5 + idx * 0.1}s` }}
+                >
+                  {feature}
                 </div>
               ))}
             </div>
-
-            {/* Social */}
-            <div className="flex gap-4">
-              {['twitter', 'github', 'linkedin'].map((social, i) => (
-                <a key={i} href="#" className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 
-                                              hover:border-white/20 flex items-center justify-center transition-all">
-                  <span className="sr-only">{social}</span>
-                  <div className="w-5 h-5 bg-white/40 rounded" />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-white/40">
-            © 2026 NexusFlow. All rights reserved.
           </div>
         </div>
-      </footer>
+
+        {/* Premium Bottom Credits */}
+        <div className="absolute bottom-8 left-0 right-0 flex justify-between items-center px-8 text-white/20 text-[10px] tracking-[0.3em]">
+          <div className="group cursor-default">
+            <span className="group-hover:text-amber-400/40 transition-colors duration-500">AKASHREDDY01</span>
+            <div className="h-px w-0 bg-linear-to-r from-amber-400/50 to-transparent group-hover:w-full transition-all duration-500 mt-1" />
+          </div>
+          <div className="flex gap-6">
+            {['VER 1.0', 'BETA'].map((text, idx) => (
+              <span key={idx} className="hover:text-amber-400/40 transition-colors duration-500 cursor-default">
+                {text}
+              </span>
+            ))}
+          </div>
+          <div className="group cursor-default">
+            <span className="group-hover:text-amber-400/40 transition-colors duration-500">WORKSPACE.NEXUS</span>
+            <div className="h-px w-0 bg-linear-to-l from-amber-400/50 to-transparent group-hover:w-full transition-all duration-500 mt-1" />
+          </div>
+        </div>
+
+        {/* Premium Scroll Indicator */}
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 animate-bounce-premium">
+          <div className="relative group">
+            <div className="absolute -inset-2 bg-amber-400/20 blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500" />
+            <div className="relative w-7 h-12 border-2 border-amber-400/30 rounded-full flex items-start justify-center p-1.5 group-hover:border-amber-400/60 transition-all duration-500">
+              <div className="w-1.5 h-3 bg-linear-to-b from-amber-400/60 to-transparent rounded-full animate-scroll-premium" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       <style jsx>{`
-        @keyframes gradient {
+        @keyframes ripple-premium {
+          0% { width: 0; height: 0; opacity: 1; }
+          100% { width: 150px; height: 150px; opacity: 0; }
+        }
+        @keyframes ripple-premium-delayed {
+          0% { width: 0; height: 0; opacity: 0.6; }
+          100% { width: 120px; height: 120px; opacity: 0; }
+        }
+        @keyframes glitch-premium-1 {
+          0%, 100% { transform: translate(0); }
+          25% { transform: translate(-3px, 3px); }
+          50% { transform: translate(3px, -3px); }
+          75% { transform: translate(-2px, -2px); }
+        }
+        @keyframes glitch-premium-2 {
+          0%, 100% { transform: translate(0); }
+          33% { transform: translate(3px, -3px); }
+          66% { transform: translate(-3px, 3px); }
+        }
+        @keyframes glitch-premium-3 {
+          0%, 100% { transform: translate(0); }
+          20% { transform: translate(2px, 2px); }
+          40% { transform: translate(-2px, -2px); }
+          60% { transform: translate(2px, -2px); }
+          80% { transform: translate(-2px, 2px); }
+        }
+        @keyframes typewriter-premium {
+          from { width: 0; }
+          to { width: 100%; }
+        }
+        @keyframes fade-in-premium {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fade-in-up-premium {
+          from { opacity: 0; transform: translateY(30px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes spin-elegant {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes spin-counter {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+        @keyframes bounce-premium {
+          0%, 100% { transform: translate(-50%, 0); }
+          50% { transform: translate(-50%, -15px); }
+        }
+        @keyframes scroll-premium {
+          0% { transform: translateY(0); opacity: 1; }
+          100% { transform: translateY(20px); opacity: 0; }
+        }
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0.2; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.05); }
+        }
+        @keyframes pulse-glow-delayed {
+          0%, 100% { opacity: 0.1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(1.08); }
+        }
+        @keyframes pulse-fast {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.2); }
+        }
+        @keyframes float-1 {
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(30px, -30px); }
+          66% { transform: translate(-20px, 20px); }
+        }
+        @keyframes float-2 {
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(-25px, 25px); }
+          66% { transform: translate(20px, -20px); }
+        }
+        @keyframes float-3 {
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(20px, 30px); }
+          66% { transform: translate(-30px, -20px); }
+        }
+        @keyframes diagonal-flow {
+          0% { opacity: 0.05; transform: rotate(-35deg) translateX(-10%); }
+          50% { opacity: 0.15; }
+          100% { opacity: 0.05; transform: rotate(-35deg) translateX(10%); }
+        }
+        @keyframes grid-flow {
+          0% { transform: perspective(1000px) rotateX(60deg) translateY(0); }
+          100% { transform: perspective(1000px) rotateX(60deg) translateY(60px); }
+        }
+        @keyframes width-pulse {
+          0%, 100% { width: 16rem; opacity: 0.4; }
+          50% { width: 20rem; opacity: 0.8; }
+        }
+        @keyframes gradient-shift {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
         }
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
+        @keyframes line-glow {
+          0%, 100% { opacity: 0.3; transform: scaleX(1); }
+          50% { opacity: 0.6; transform: scaleX(1.1); }
+        }
+        @keyframes line-glow-reverse {
+          0%, 100% { opacity: 0.3; transform: scaleX(1); }
+          50% { opacity: 0.6; transform: scaleX(1.1); }
+        }
+        @keyframes noise {
+          0%, 100% { transform: translate(0, 0); }
+          10% { transform: translate(-5%, -5%); }
+          20% { transform: translate(-10%, 5%); }
+          30% { transform: translate(5%, -10%); }
+          40% { transform: translate(-5%, 15%); }
+          50% { transform: translate(-10%, 5%); }
+          60% { transform: translate(15%, 0); }
+          70% { transform: translate(0, 10%); }
+          80% { transform: translate(-15%, 0); }
+          90% { transform: translate(10%, 5%); }
+        }
+        
+        .animate-ripple-premium { animation: ripple-premium 1.5s cubic-bezier(0, 0, 0.2, 1) forwards; }
+        .animate-ripple-premium-delayed { animation: ripple-premium-delayed 1.5s cubic-bezier(0, 0, 0.2, 1) 0.1s forwards; }
+        .animate-glitch-premium-1 { animation: glitch-premium-1 0.4s infinite; }
+        .animate-glitch-premium-2 { animation: glitch-premium-2 0.4s infinite 0.15s; }
+        .animate-glitch-premium-3 { animation: glitch-premium-3 0.5s infinite 0.25s; }
+        .animate-typewriter-premium { animation: typewriter-premium 3s steps(30) forwards; }
+        .animate-fade-in-premium { 
+          animation: fade-in-premium 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+        }
+        .animate-fade-in-up-premium { 
+          animation: fade-in-up-premium 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+        }
+        .animate-spin-elegant { animation: spin-elegant 25s linear infinite; }
+        .animate-spin-counter { animation: spin-counter 20s linear infinite; }
+        .animate-bounce-premium { animation: bounce-premium 3s ease-in-out infinite; }
+        .animate-scroll-premium { animation: scroll-premium 2s ease-in-out infinite; }
+        .animate-pulse-glow { animation: pulse-glow 4s ease-in-out infinite; }
+        .animate-pulse-glow-delayed { animation: pulse-glow-delayed 5s ease-in-out infinite 0.5s; }
+        .animate-pulse-fast { animation: pulse-fast 1.5s ease-in-out infinite; }
+        .animate-float-1 { animation: float-1 20s ease-in-out infinite; }
+        .animate-float-2 { animation: float-2 25s ease-in-out infinite; }
+        .animate-float-3 { animation: float-3 30s ease-in-out infinite; }
+        .animate-diagonal-flow { animation: diagonal-flow 8s ease-in-out infinite; }
+        .animate-grid-flow { animation: grid-flow 20s linear infinite; }
+        .animate-width-pulse { animation: width-pulse 3s ease-in-out infinite; }
+        .animate-gradient-shift { 
+          animation: gradient-shift 5s ease infinite;
+          background-size: 200% 200%;
+        }
+        .animate-line-glow { animation: line-glow 2s ease-in-out infinite; }
+        .animate-line-glow-reverse { animation: line-glow-reverse 2s ease-in-out infinite 0.5s; }
+        .animate-noise { 
+          animation: noise 0.2s steps(10) infinite;
+        }
+        .bg-noise {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' /%3E%3C/svg%3E");
         }
       `}</style>
     </div>
